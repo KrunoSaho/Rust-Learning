@@ -78,7 +78,7 @@ fn main() {
     let mut main_cells = vec![];
 
     // Add data
-    [(1, 2), (5, 5), (3, 1), (5, 3)]
+    [(1, 2), (5, 5), (3, 1), (5, 3), (12, 4)]
         .iter()
         .for_each(|x| add_point_to_cell(*x, &mut main_cells));
 
