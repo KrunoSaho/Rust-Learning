@@ -1,5 +1,4 @@
 
-
 /********************************** Data *******************************/
 
 struct Cell {
@@ -17,6 +16,7 @@ struct CellIndirector
 
 
 /********************************** Data formatting ********************/
+
 impl std::fmt::Debug for Cell {
     fn fmt (&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "(x:{}, y:{}, id:{})", self.x, self.y, self.id)
@@ -42,8 +42,8 @@ impl std::fmt::Debug for CellIndirector {
 
 /********************************** Functions *******************************/
 
-fn add_point_to_cell(xy: (i32, i32), points: &mut Vec<Cell>) {
-    let cell = Cell{ id: 0, x: xy.0, y: xy.1 };
+fn add_point_to_cell(xy_id: (i64, i32, i32), points: &mut Vec<Cell>) {
+    let cell = Cell{ id: xy_id.0, x: xy_id.1, y: xy_id.2 };
     points.push(cell);
 }
 
@@ -72,24 +72,77 @@ fn partition_cells(overlord: &CellIndirector) -> CellIndirector {
 }
 
 
+fn get_position(node: &CellIndirector, id: i64) -> Option<&Cell> {
+    if node.children.is_empty() {
+        let found = node.cells.iter().find(|c| c.id == id);
+
+        if found.is_some() {
+            return found;
+        }
+    }
+
+    let res = node.children.iter()
+        .find(|n| get_position(n, id).is_some());
+
+    if res.is_none() {
+        None
+    }
+    else {
+        get_position(res.unwrap(), id)
+    }
+}
+
+
+fn partition_until_bucket_size(node: &mut CellIndirector, size: usize) {
+    if node.cells.len() <= size {
+        return;
+    }
+
+    let cells = &node.cells;
+    let (left, right) = cells.split_at(size);
+
+    let left_node = CellIndirector {
+        idx: node.idx + 1,
+        cells: left.to_vec(),
+        children: vec![],
+    };
+
+    let mut right_node = CellIndirector {
+        idx: node.idx + 2,
+        cells: right.to_vec(),
+        children: vec![]
+    };
+
+    partition_until_bucket_size(&mut right_node, size);
+
+    node.children.append(vec![left_node].as_mut());
+    node.children.append(vec![right_node].as_mut());
+}
+
+
 /********************************** Run *******************************/
 
 fn main() {
     let mut main_cells = vec![];
 
     // Add data
-    [(1, 2), (5, 5), (3, 1), (5, 3)]
-        .iter()
-        .for_each(|x| add_point_to_cell(*x, &mut main_cells));
+    let mut idx: i64 = 0;
+    for y in 0..10 {
+        for x in 0..10 {
+            add_point_to_cell((idx, x, y), &mut main_cells);
+            idx += 1;
+        }
+    }
 
     // Add overlord grid
-    let root = CellIndirector {
+    let mut root = CellIndirector {
         idx: 0,
         cells: main_cells,
         children: vec![],
     };
 
+    // Query
+    println!("{:?}", get_position(&root, 99));
+    partition_until_bucket_size(&mut root, 5);
     println!("{:?}", root);
-    let new_root = partition_cells(&root);
-    println!("{:?}", new_root);
 }
