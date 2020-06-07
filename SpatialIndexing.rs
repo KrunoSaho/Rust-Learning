@@ -1,4 +1,3 @@
-
 /********************************** Data *******************************/
 
 struct Cell {
@@ -7,24 +6,22 @@ struct Cell {
     y: i32,
 }
 
-struct CellIndirector
-{
+struct CellIndirector {
     idx: i64,
     cells: Vec<Cell>,
     children: Vec<CellIndirector>,
 }
 
-
 /********************************** Data formatting ********************/
 
 impl std::fmt::Debug for Cell {
-    fn fmt (&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "(x:{}, y:{}, id:{})", self.x, self.y, self.id)
     }
 }
 
 impl std::clone::Clone for Cell {
-    fn clone (&self) -> Cell {
+    fn clone(&self) -> Cell {
         Cell {
             id: self.id,
             x: self.x,
@@ -34,19 +31,25 @@ impl std::clone::Clone for Cell {
 }
 
 impl std::fmt::Debug for CellIndirector {
-    fn fmt (&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "[idx: {} = {:?}], [{:?}]", self.idx, self.cells, self.children)
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "[idx: {} = {:?}], [{:?}]",
+            self.idx, self.cells, self.children
+        )
     }
 }
-
 
 /********************************** Functions *******************************/
 
 fn add_point_to_cell(xy_id: (i64, i32, i32), points: &mut Vec<Cell>) {
-    let cell = Cell{ id: xy_id.0, x: xy_id.1, y: xy_id.2 };
+    let cell = Cell {
+        id: xy_id.0,
+        x: xy_id.1,
+        y: xy_id.2,
+    };
     points.push(cell);
 }
-
 
 fn partition_cells(overlord: &CellIndirector) -> CellIndirector {
     let mut new_cells = overlord.cells.to_vec();
@@ -71,7 +74,6 @@ fn partition_cells(overlord: &CellIndirector) -> CellIndirector {
     }
 }
 
-
 fn get_position(node: &CellIndirector, id: i64) -> Option<&Cell> {
     if node.children.is_empty() {
         let found = node.cells.iter().find(|c| c.id == id);
@@ -81,27 +83,24 @@ fn get_position(node: &CellIndirector, id: i64) -> Option<&Cell> {
         }
     }
 
-    let res = node.children.iter()
-        .find(|n| get_position(n, id).is_some());
+    let res = node.children.iter().find(|n| get_position(n, id).is_some());
 
     if res.is_none() {
         None
-    }
-    else {
+    } else {
         get_position(res.unwrap(), id)
     }
 }
 
-
 fn partition_until_bucket_size(node: &mut CellIndirector, size: usize) {
-    if node.cells.len() <= size {
+    if node.cells.len() <= size || node.cells.is_empty() {
         return;
     }
 
     let cells = &node.cells;
     let (left, right) = cells.split_at(size);
 
-    let left_node = CellIndirector {
+    let mut left_node = CellIndirector {
         idx: node.idx + 1,
         cells: left.to_vec(),
         children: vec![],
@@ -110,15 +109,22 @@ fn partition_until_bucket_size(node: &mut CellIndirector, size: usize) {
     let mut right_node = CellIndirector {
         idx: node.idx + 2,
         cells: right.to_vec(),
-        children: vec![]
+        children: vec![],
     };
 
+    partition_until_bucket_size(&mut left_node, size);
     partition_until_bucket_size(&mut right_node, size);
 
-    node.children.append(vec![left_node].as_mut());
-    node.children.append(vec![right_node].as_mut());
-}
+    if !left.is_empty() {
+        node.children.append(vec![left_node].as_mut());
+    }
 
+    if !right.is_empty() {
+        node.children.append(vec![right_node].as_mut());
+    }
+
+    node.cells = vec![];
+}
 
 /********************************** Run *******************************/
 
@@ -127,8 +133,8 @@ fn main() {
 
     // Add data
     let mut idx: i64 = 0;
-    for y in 0..10 {
-        for x in 0..10 {
+    for y in 0..2 {
+        for x in 0..2 {
             add_point_to_cell((idx, x, y), &mut main_cells);
             idx += 1;
         }
@@ -142,7 +148,7 @@ fn main() {
     };
 
     // Query
-    println!("{:?}", get_position(&root, 99));
-    partition_until_bucket_size(&mut root, 5);
+    println!("{:?}", get_position(&root, 2));
+    partition_until_bucket_size(&mut root, 2);
     println!("{:?}", root);
 }
