@@ -17,19 +17,17 @@ struct CellIndirector {
 /********************************** Impl *******************************/
 
 impl From<(i64, i32, i32)> for Cell {
-    fn from ((id, x, y): (i64, i32, i32)) -> Self {
-        Self {id, x, y}
+    fn from((id, x, y): (i64, i32, i32)) -> Self {
+        Self { id, x, y }
     }
 }
-
 
 impl CellIndirector {
     fn get_position(&self, id: i64) -> Option<&Cell> {
         // Leaf node (data is only contained in leaf nodes)
         if self.children.is_empty() {
             self.cells.iter().find(|c| c.id == id)
-        }
-        else {
+        } else {
             // Visits all children in a linear fashion
             self.children.iter().find_map(|n| n.get_position(id))
         }
